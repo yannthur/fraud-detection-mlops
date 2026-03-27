@@ -1,0 +1,88 @@
+name: MLOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv venv
+          source .venv/bin/activate
+          uv pip install -r requirements.txt
+          uv pip install pre-commit
+
+      - name: Run pre-commit
+        run: |
+          source .venv/bin/activate
+          pre-commit run --all-files || true
+
+      - name: Linting
+        run: |
+          source .venv/bin/activate
+          flake8 src/ train.py app.py --max-line-length=88 --extend-ignore=E203,W503,E402
+
+      - name: Check formatting
+        run: |
+          source .venv/bin/activate
+          black --check src/ train.py app.py
+
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
+          pytest tests/ -v --tb=short
+
+      - name: Train model
+        run: |
+          source .venv/bin/activate
+          python train.py
+
+      - name: Validate accuracy
+        run: |
+          source .venv/bin/activate
+          python -c "
+          import joblib
+          from sklearn.metrics import accuracy_score
+          from src.data_preprocessing import load_and_prepare
+
+          model = joblib.load('models/fraud_model.pkl')['model']
+          _, X_test, _, y_test = load_and_prepare('data/train.csv')
+          acc = accuracy_score(y_test, model.predict(X_test))
+          print(f'Accuracy: {acc:.4f}')
+          assert acc >= 0.80, f'Accuracy {acc:.4f} below threshold'
+          print('Accuracy validation PASSED')
+          "
+
+      - name: Upload model
+        if: github.ref == 'refs/heads/main'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          source .venv/bin/activate
+          pip install huggingface_hub
+          python scripts/upload_to_hub.py
+
+      - name: Update Spaces
+        if: github.ref == 'refs/heads/main'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          source .venv/bin/activate
+          pip install huggingface_hub
+          python scripts/update_spaces.py
