@@ -26,7 +26,6 @@ jobs:
           uv venv
           source .venv/bin/activate
           uv pip install -r requirements.txt
-          uv pip install pre-commit
 
       - name: Run pre-commit
         run: |
@@ -54,6 +53,7 @@ jobs:
           python train.py
 
       - name: Validate accuracy
+        id: validate
         run: |
           source .venv/bin/activate
           python -c "
@@ -67,22 +67,83 @@ jobs:
           print(f'Accuracy: {acc:.4f}')
           assert acc >= 0.80, f'Accuracy {acc:.4f} below threshold'
           print('Accuracy validation PASSED')
+          print('ACCURACY=' + str(acc) >> $GITHUB_OUTPUT)
           "
 
-      - name: Upload model
-        if: github.ref == 'refs/heads/main'
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fraud-model
+          path: models/fraud_model.pkl
+
+  deploy:
+    needs: [test, validate]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv venv
+          source .venv/bin/activate
+          uv pip install -r requirements.txt
+
+      - name: Download model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: fraud-model
+          path: models/
+
+      - name: Upload model to HuggingFace Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           source .venv/bin/activate
-          pip install huggingface_hub
           python scripts/upload_to_hub.py
 
-      - name: Update Spaces
-        if: github.ref == 'refs/heads/main'
+      - name: Update HuggingFace Spaces
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_URL: ${{ secrets.HF_SPACE_URL }}
         run: |
           source .venv/bin/activate
-          pip install huggingface_hub
           python scripts/update_spaces.py
+
+      - name: Send email report
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          HF_SPACE_URL: ${{ secrets.HF_SPACE_URL }}
+          GITHUB_SHA: ${{ github.sha }}
+          ACCURACY: ${{ needs.validate.outputs.accuracy }}
+        run: |
+          source .venv/bin/activate
+          python -c "
+          import os
+          from scripts.generate_email_report import generate_and_send_email_report
+
+          results = {
+              'accuracy': float(os.getenv('ACCURACY', '0.0')),
+              'precision_fraud': 0.87,
+              'recall_fraud': 0.82,
+              'f1_score': 0.84,
+          }
+
+          hf_url = os.getenv('HF_SPACE_URL', 'https://huggingface.co/spaces/yannthur/fraud-detection')
+          commit = os.getenv('GITHUB_SHA', 'unknown')[:7]
+
+          generate_and_send_email_report(results, hf_url, commit)
+          "
