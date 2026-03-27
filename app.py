@@ -6,7 +6,7 @@ from pathlib import Path
 import gradio as gr
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.resolve()))
 
 from src.model import FraudDetector
 
