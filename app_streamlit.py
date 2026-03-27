@@ -52,9 +52,8 @@ def main():
 
     st.title("\U0001f52e Detection de Fraude Bancaire")
     st.markdown(
-        """
-    Entrez les caracteristiques d'une transaction pour predire si elle est frauduleuse.
-    """
+        "Entrez les caracteristiques d'une transaction"
+        " pour predire si elle est frauduleuse."
     )
 
     col1, col2 = st.columns(2)
