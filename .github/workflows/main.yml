@@ -54,9 +54,9 @@ jobs:
         id: tests
         run: |
           source .venv/bin/activate
-          pytest tests/ -v --tb=short --junitxml=test-report.xml 2>&1 | tee test-output.txt
+          pytest tests/ -v --tb=short --junitxml=test-report.xml
 
-      - name: Entraînement du modèle
+      - name: Entrainement du modele
         run: |
           source .venv/bin/activate
           python train.py
@@ -75,19 +75,17 @@ jobs:
 
           X_train, X_test, y_train, y_test = load_and_prepare('data/train.csv')
           acc = accuracy_score(y_test, model.predict(X_test))
-          print(f'{acc:.4f}')
+          print(acc)
           ")
           echo "accuracy=$ACC" >> $GITHUB_OUTPUT
-          python -c "acc=float('$ACC'); print(f'Accuracy: {acc:.4f} - {\"PASS\" if acc >= 0.80 else \"FAIL\"}')"
+          python -c "acc=float('$ACC'); print('Accuracy:', round(acc, 4), '- PASS' if acc >= 0.80 else 'FAIL')"
 
       - name: Upload des rapports
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-reports
-          path: |
-            test-report.xml
-            test-output.txt
+          path: test-report.xml
 
   notify:
     name: Notification Email
@@ -107,7 +105,7 @@ jobs:
       - name: Install dependencies
         run: pip install google-generativeai
 
-      - name: Générer le rapport via Gemini
+      - name: Generer le rapport via Gemini
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
@@ -121,17 +119,11 @@ jobs:
           status = '${{ needs.test-and-validate.result }}'
           accuracy = '${{ needs.test-and-validate.outputs.accuracy }}'
 
-          prompt = f'''Génère un rapport professionnel pour le pipeline MLOps de détection de fraude.
-          Statut: {status}
-          Accuracy: {accuracy}
-          Branche: ${{ github.head_ref }}
-          Commit: ${{ github.sha }}
-          '''
+          prompt = 'Rapport pipeline MLOps - Statut: ' + status + ' - Accuracy: ' + str(accuracy)
 
           response = model.generate_content(prompt)
           print(response.text)
           " > email_body.txt
-          cat email_body.txt
 
       - name: Envoi email
         if: ${{ secrets.SMTP_SERVER != '' }}
@@ -141,7 +133,7 @@ jobs:
           server_port: ${{ secrets.SMTP_PORT }}
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "[MLOps] Pipeline ${{ needs.test-and-validate.result == 'success' && '✅ Succès' || '❌ Échec' }}"
+          subject: "MLOps Pipeline Result - ${{ needs.test-and-validate.result }}"
           to: ${{ secrets.MAIL_TO }}
           from: ${{ secrets.SMTP_USERNAME }}
           body: file://email_body.txt
@@ -166,12 +158,12 @@ jobs:
       - name: Install dependencies
         run: pip install huggingface_hub
 
-      - name: Upload modèle sur HF Hub
+      - name: Upload modele sur HF Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python scripts/upload_to_hub.py
 
-      - name: Mise à jour HF Spaces
+      - name: Mise a jour HF Spaces
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python scripts/update_spaces.py
