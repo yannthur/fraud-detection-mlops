@@ -25,7 +25,7 @@ def update_spaces(repo_name: str = "fraud-detection"):
 
     readme_content = """---
 title: Fraud Detection
-emoji:"\U0001f52e"
+emoji: "\U0001f52e"
 colorFrom: blue
 colorTo: purple
 sdk: gradio
