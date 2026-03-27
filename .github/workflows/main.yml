@@ -6,9 +6,6 @@ on:
   push:
     branches: [main]
 
-env:
-  PYTHON_VERSION: '3.10'
-
 jobs:
   test-and-validate:
     name: Tests & Validation
@@ -26,32 +23,49 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+          python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install UV
+        run: pip install uv
+
+      - name: Create venv and install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          uv venv
+          source .venv/bin/activate
+          uv pip install -r requirements.txt
+          uv pip install pre-commit
+
+      - name: Run pre-commit
+        run: |
+          source .venv/bin/activate
+          pre-commit run --all-files || true
 
       - name: Linting flake8
-        run: flake8 src/ train.py app.py --max-line-length=88 --extend-ignore=E203,W503,E402
+        run: |
+          source .venv/bin/activate
+          flake8 src/ train.py app.py --max-line-length=88 --extend-ignore=E203,W503,E402
 
       - name: Formatage black (check only)
-        run: black --check src/ train.py app.py
+        run: |
+          source .venv/bin/activate
+          black --check src/ train.py app.py
 
       - name: Tests pytest
         id: tests
         run: |
+          source .venv/bin/activate
           pytest tests/ -v --tb=short --junitxml=test-report.xml 2>&1 | tee test-output.txt
 
       - name: Entraînement du modèle
-        run: python train.py
+        run: |
+          source .venv/bin/activate
+          python train.py
 
       - name: Validation seuil accuracy
         id: validate
         run: |
-          python -c "
+          source .venv/bin/activate
+          ACC=$(python -c "
           import joblib
           from sklearn.metrics import accuracy_score
           from src.data_preprocessing import load_and_prepare
@@ -61,12 +75,10 @@ jobs:
 
           X_train, X_test, y_train, y_test = load_and_prepare('data/train.csv')
           acc = accuracy_score(y_test, model.predict(X_test))
-          print(f'ACCURACY={acc:.4f}')
-          print(f'Validation: Accuracy {acc:.4f} >= 0.80: {\"PASS\" if acc >= 0.80 else \"FAIL\"}')
-          " 2>&1 | tee validation.txt
-
-          ACC=$(grep 'ACCURACY=' validation.txt | cut -d'=' -f2)
+          print(f'{acc:.4f}')
+          ")
           echo "accuracy=$ACC" >> $GITHUB_OUTPUT
+          python -c "acc=float('$ACC'); print(f'Accuracy: {acc:.4f} - {\"PASS\" if acc >= 0.80 else \"FAIL\"}')"
 
       - name: Upload des rapports
         uses: actions/upload-artifact@v4
@@ -76,7 +88,6 @@ jobs:
           path: |
             test-report.xml
             test-output.txt
-            validation.txt
 
   notify:
     name: Notification Email
@@ -91,7 +102,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: '3.12'
 
       - name: Install dependencies
         run: pip install google-generativeai
@@ -150,7 +161,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: '3.12'
 
       - name: Install dependencies
         run: pip install huggingface_hub
