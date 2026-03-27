@@ -10,4 +10,4 @@ isort>=5.12
 pre-commit>=3.5
 detect-secrets>=1.4
 huggingface_hub>=0.20
-anthropic>=0.25
+google-generativeai>=0.8

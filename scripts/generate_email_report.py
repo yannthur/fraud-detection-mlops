@@ -1,14 +1,16 @@
 """Génère un rapport email basé sur les résultats du pipeline."""
-
+import os
 import sys
 from pathlib import Path
 
-import anthropic
-
 
 def generate_email_report(pipeline_results: dict, hf_space_url: str) -> str:
-    """Génère un rapport email utilisant l'IA."""
-    client = anthropic.Anthropic()
+    """Génère un rapport email utilisant Gemini."""
+    import google.generativeai as genai
+
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
     prompt = f"""Tu es un assistant qui génère des rapports professionnels.
 
@@ -22,13 +24,9 @@ L'application est déployée sur: {hf_space_url}
 
 Génère un email professionnel résumant ces résultats."""
 
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    response = model.generate_content(prompt)
 
-    return message.content[0].text
+    return response.text
 
 
 if __name__ == "__main__":
