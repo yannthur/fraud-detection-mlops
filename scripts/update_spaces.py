@@ -6,7 +6,7 @@ import sys
 from huggingface_hub import HfApi, login
 
 
-def update_spaces(repo_name: str = "fraud-detection"):
+def update_spaces(repo_name: str = "fraud-detection-v2"):
     """Met à jour le HuggingFace Space."""
     token = os.getenv("HF_TOKEN")
 
