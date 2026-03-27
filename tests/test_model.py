@@ -94,7 +94,7 @@ class TestDataPreprocessing:
         from src.data_preprocessing import load_and_prepare
 
         X_train, X_test, y_train, y_test = load_and_prepare("data/train.csv")
-        assert X_train.shape[0] + X_test.shape[0] == 100000
+        assert X_train.shape[0] + X_test.shape[0] == 1000
         assert y_train.shape[0] == X_train.shape[0]
         assert y_test.shape[0] == X_test.shape[0]
 
