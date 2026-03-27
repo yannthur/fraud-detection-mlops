@@ -2,11 +2,12 @@
 
 import os
 import sys
+import tempfile
 
 from huggingface_hub import HfApi, login
 
 
-def update_spaces(repo_name: str = "fraud-detection"):
+def update_spaces(repo_name: str = "fraud-detection-streamlit"):
     """Met à jour le HuggingFace Space."""
     token = os.getenv("HF_TOKEN")
 
@@ -19,36 +20,59 @@ def update_spaces(repo_name: str = "fraud-detection"):
     api = HfApi()
     repo_id = f"yannthur/{repo_name}"
 
-    api.create_repo(
-        repo_id=repo_id, repo_type="space", exist_ok=True, space_sdk="gradio"
-    )
-
     readme_content = """---
-title: Fraud Detection
+title: Fraud Detection Streamlit
 emoji: "\U0001f52e"
 colorFrom: blue
 colorTo: purple
-sdk: gradio
-sdk_version: 5.0.0
-app_file: app.py
+sdk: docker
 pinned: false
 license: mit
 ---
 
 # Fraud Detection App
 
-Application de détection de fraude bancaire utilisant un modèle RandomForest.
+Application de détection de fraude bancaire avec un modèle RandomForest et Streamlit.
 
 ## Utilisation
 
 Entrez les caractéristiques d'une transaction pour prédire si elle est frauduleuse.
 """
 
-    import tempfile
+    dockerfile_content = """FROM python:3.10-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \\\\
+    build-essential \\\\
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app_streamlit.py ./app.py
+COPY src/ ./src/
+COPY models/ ./models/
+
+EXPOSE 8501
+
+HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
+
+ENTRYPOINT ["streamlit", "run", "app.py",
+    "--server.port=8501", "--server.address=0.0.0.0"]
+"""
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
         f.write(readme_content)
         readme_path = f.name
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".dockerfile", delete=False) as f:
+        f.write(dockerfile_content)
+        dockerfile_path = f.name
+
+    api.create_repo(
+        repo_id=repo_id, repo_type="space", exist_ok=True, space_sdk="docker"
+    )
 
     api.upload_file(
         path_or_fileobj=readme_path,
@@ -57,11 +81,16 @@ Entrez les caractéristiques d'une transaction pour prédire si elle est fraudul
         repo_type="space",
     )
 
-    os.unlink(readme_path)
+    api.upload_file(
+        path_or_fileobj=dockerfile_path,
+        path_in_repo="Dockerfile",
+        repo_id=repo_id,
+        repo_type="space",
+    )
 
     api.upload_file(
-        path_or_fileobj="app.py",
-        path_in_repo="app.py",
+        path_or_fileobj="app_streamlit.py",
+        path_in_repo="app_streamlit.py",
         repo_id=repo_id,
         repo_type="space",
     )
@@ -86,6 +115,9 @@ Entrez les caractéristiques d'une transaction pour prédire si elle est fraudul
         repo_type="space",
         path_in_repo="models",
     )
+
+    os.unlink(readme_path)
+    os.unlink(dockerfile_path)
 
     print(f"Space mis à jour sur https://huggingface.co/spaces/{repo_id}")
 

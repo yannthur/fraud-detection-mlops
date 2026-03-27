@@ -37,12 +37,12 @@ jobs:
       - name: Linting
         run: |
           source .venv/bin/activate
-          flake8 src/ train.py app.py --max-line-length=88 --extend-ignore=E203,W503,E402
+          flake8 src/ train.py app.py app_streamlit.py --max-line-length=88 --extend-ignore=E203,W503,E402
 
       - name: Check formatting
         run: |
           source .venv/bin/activate
-          black --check src/ train.py app.py
+          black --check src/ train.py app.py app_streamlit.py
 
       - name: Run tests
         run: |
@@ -138,7 +138,7 @@ jobs:
               'recall_fraud': 0.82,
               'f1_score': 0.84,
           }
-          hf_url = os.getenv('HF_SPACE_URL', 'https://huggingface.co/spaces/yannthur/fraud-detection')
+          hf_url = os.getenv('HF_SPACE_URL', 'https://huggingface.co/spaces/yannthur/fraud-detection-streamlit')
           commit = os.getenv('GITHUB_SHA', 'unknown')[:7]
           generate_and_send_email_report(results, hf_url, commit)
           "
