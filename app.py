@@ -1,12 +1,9 @@
-"""Application Gradio pour la détection de fraude."""
+"""Application Gradio pour la detection de fraude."""
 
-import sys
 from pathlib import Path
 
 import gradio as gr
 import numpy as np
-
-sys.path.insert(0, str(Path(__file__).parent.resolve()))
 
 from src.model import FraudDetector
 
@@ -29,16 +26,20 @@ CATEGORIES = [
     "travel",
 ]
 
+_model = None
 
-def load_model():
-    """Charge le modèle."""
-    model = FraudDetector()
-    if MODEL_PATH.exists():
-        model.load(str(MODEL_PATH))
-        print(f"Modèle chargé depuis {MODEL_PATH}")
-    else:
-        print(f"ATTENTION: Modèle non trouvé à {MODEL_PATH}")
-    return model
+
+def get_model():
+    """Charge le model (cache)."""
+    global _model
+    if _model is None:
+        _model = FraudDetector()
+        if MODEL_PATH.exists():
+            _model.load(str(MODEL_PATH))
+            print(f"Model loaded from {MODEL_PATH}")
+        else:
+            print(f"WARNING: Model not found at {MODEL_PATH}")
+    return _model
 
 
 def predict(
@@ -52,11 +53,11 @@ def predict(
     merch_long: float,
     age: float,
 ) -> dict:
-    """Prédit si une transaction est frauduleuse."""
-    model = load_model()
+    """Predit si une transaction est frauduleuse."""
+    model = get_model()
 
     if not MODEL_PATH.exists():
-        return {"Erreur": "Modèle non entraîné. Lancez python train.py d'abord."}
+        return {"Erreur": "Modele non entraine. Lancez python train.py d'abord."}
 
     category_encoded = CATEGORIES.index(category) if category in CATEGORIES else 0
     gender_encoded = 1 if gender == "M" else 0
@@ -64,16 +65,16 @@ def predict(
     features = np.array(
         [
             [
-                amt,
-                lat,
-                long,
-                city_pop,
-                merch_lat,
-                merch_long,
-                category_encoded,
-                gender_encoded,
-                age,
-                np.sqrt((lat - merch_lat) ** 2 + (long - merch_long) ** 2),
+                float(amt),
+                float(lat),
+                float(long),
+                float(city_pop),
+                float(merch_lat),
+                float(merch_long),
+                float(category_encoded),
+                float(gender_encoded),
+                float(age),
+                float(np.sqrt((lat - merch_lat) ** 2 + (long - merch_long) ** 2)),
             ]
         ]
     )
@@ -82,42 +83,37 @@ def predict(
     prediction = model.predict(features)[0]
 
     return {
-        "Prédiction": "FRAUDE" if prediction == 1 else "Légitime",
-        "Probabilité fraude": f"{proba[1] * 100:.1f}%",
-        "Probabilité légitime": f"{proba[0] * 100:.1f}%",
+        "Prediction": "FRAUDE" if prediction == 1 else "Legitime",
+        "Probabilite fraude": f"{proba[1] * 100:.1f}%",
+        "Probabilite legitime": f"{proba[0] * 100:.1f}%",
     }
 
 
-def main():
-    """Lance l'application Gradio."""
-    iface = gr.Interface(
-        fn=predict,
-        inputs=[
-            gr.Number(label="Montant (amt)", value=100.0),
-            gr.Dropdown(choices=CATEGORIES, label="Catégorie", value=CATEGORIES[0]),
-            gr.Radio(choices=["M", "F"], label="Genre", value="M"),
-            gr.Number(label="Population ville", value=10000),
-            gr.Number(label="Latitude client", value=40.0),
-            gr.Number(label="Longitude client", value=-100.0),
-            gr.Number(label="Latitude marchand", value=40.1),
-            gr.Number(label="Longitude marchand", value=-100.1),
-            gr.Number(label="Âge", value=35),
-        ],
-        outputs="json",
-        title="Détection de Fraude Bancaire",
-        description=(
-            "Entrez les caractéristiques d'une transaction "
-            "pour prédire si elle est frauduleuse."
-        ),
-        examples=[
-            [150.0, "gas_transport", "M", 50000, 40.7, -74.0, 40.8, -74.1, 30],
-            [2000.0, "shopping_net", "F", 100000, 34.0, -118.0, 34.1, -118.1, 45],
-            [50.0, "grocery_pos", "M", 25000, 41.0, -87.0, 41.1, -87.1, 25],
-        ],
-    )
-
-    iface.launch()
-
+demo = gr.Interface(
+    fn=predict,
+    inputs=[
+        gr.Number(label="Montant (amt)", value=100.0),
+        gr.Dropdown(choices=CATEGORIES, label="Categorie", value=CATEGORIES[0]),
+        gr.Radio(choices=["M", "F"], label="Genre", value="M"),
+        gr.Number(label="Population ville", value=10000),
+        gr.Number(label="Latitude client", value=40.0),
+        gr.Number(label="Longitude client", value=-100.0),
+        gr.Number(label="Latitude marchand", value=40.1),
+        gr.Number(label="Longitude marchand", value=-100.1),
+        gr.Number(label="Age", value=35),
+    ],
+    outputs="json",
+    title="Detection de Fraude Bancaire",
+    description=(
+        "Entrez les caracteristiques d'une transaction "
+        "pour predire si elle est frauduleuse."
+    ),
+    examples=[
+        [150.0, "gas_transport", "M", 50000, 40.7, -74.0, 40.8, -74.1, 30],
+        [2000.0, "shopping_net", "F", 100000, 34.0, -118.0, 34.1, -118.1, 45],
+        [50.0, "grocery_pos", "M", 25000, 41.0, -87.0, 41.1, -87.1, 25],
+    ],
+)
 
 if __name__ == "__main__":
-    main()
+    demo.launch()
