@@ -6,7 +6,7 @@ import sys
 from huggingface_hub import HfApi, login
 
 
-def update_spaces(repo_name: str = "fraud-detection-v2"):
+def update_spaces(repo_name: str = "fraud-detection"):
     """Met à jour le HuggingFace Space."""
     token = os.getenv("HF_TOKEN")
 
@@ -22,6 +22,42 @@ def update_spaces(repo_name: str = "fraud-detection-v2"):
     api.create_repo(
         repo_id=repo_id, repo_type="space", exist_ok=True, space_sdk="gradio"
     )
+
+    readme_content = """---
+title: Fraud Detection
+emoji:"\U0001f52e"
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+sdk_version: 5.0.0
+app_file: app.py
+pinned: false
+license: mit
+---
+
+# Fraud Detection App
+
+Application de détection de fraude bancaire utilisant un modèle RandomForest.
+
+## Utilisation
+
+Entrez les caractéristiques d'une transaction pour prédire si elle est frauduleuse.
+"""
+
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
+        f.write(readme_content)
+        readme_path = f.name
+
+    api.upload_file(
+        path_or_fileobj=readme_path,
+        path_in_repo="README.md",
+        repo_id=repo_id,
+        repo_type="space",
+    )
+
+    os.unlink(readme_path)
 
     api.upload_file(
         path_or_fileobj="app.py",
