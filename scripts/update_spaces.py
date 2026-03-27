@@ -43,9 +43,7 @@ Entrez les caractéristiques d'une transaction pour prédire si elle est fraudul
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \\\\
-    build-essential \\\\
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -58,8 +56,10 @@ EXPOSE 8501
 
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
 
-ENTRYPOINT ["streamlit", "run", "app.py",
-    "--server.port=8501", "--server.address=0.0.0.0"]
+ENTRYPOINT [
+    "streamlit", "run", "app.py",
+    "--server.port=8501", "--server.address=0.0.0.0"
+]
 """
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
