@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
-CATEGORICAL_COLS = ["category", "gender", "state", "job"]
+CATEGORICAL_COLS = ["category", "gender"]
 NUMERIC_COLS = ["amt", "lat", "long", "city_pop", "merch_lat", "merch_long"]
 TARGET_COL = "is_fraud"
 
