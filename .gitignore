@@ -42,11 +42,11 @@ secrets/
 .secrets/
 
 # Data files (large files - Git LFS)
-*.pkl
-*.pickle
-*.h5
-*.pt
-*.model
+#*.pkl
+#*.pickle
+#*.h5
+#*.pt
+#*.model
 
 # Jupyter notebooks
 .ipynb_checkpoints/
