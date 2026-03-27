@@ -26,6 +26,7 @@ jobs:
           uv venv
           source .venv/bin/activate
           uv pip install -r requirements.txt
+          uv pip install pre-commit flake8
 
       - name: Run pre-commit
         run: |
@@ -35,6 +36,7 @@ jobs:
       - name: Linting
         run: |
           source .venv/bin/activate
+          uv pip install flake8
           flake8 src/ train.py app.py --max-line-length=88 --extend-ignore=E203,W503,E402
 
       - name: Check formatting
