@@ -44,6 +44,13 @@ def update_spaces(repo_name: str = "fraud-detection"):
         repo_type="space",
     )
 
+    api.upload_folder(
+        folder_path="models",
+        repo_id=repo_id,
+        repo_type="space",
+        path_in_repo="models",
+    )
+
     print(f"Space mis à jour sur https://huggingface.co/spaces/{repo_id}")
 
 
