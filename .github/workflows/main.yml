@@ -1,0 +1,54 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install UV
+        run: pip install uv
+
+      - name: Cache UV
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: uv sync --all-packages
+
+      - name: Run pre-commit
+        run: uv run pre-commit run --all-files
+
+      - name: Run tests
+        run: uv run pytest tests/ -v
+
+      - name: Upload model to Hub
+        if: github.ref == 'refs/heads/main'
+        run: uv run python scripts/upload_to_hub.py
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+      - name: Update Spaces
+        if: github.ref == 'refs/heads/main'
+        run: uv run python scripts/update_spaces.py
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+      - name: Generate and send email report
+        if: github.ref == 'refs/heads/main'
+        run: uv run python scripts/generate_email_report.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HF_SPACE_URL: ${{ secrets.HF_SPACE_URL }}

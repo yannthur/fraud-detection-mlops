@@ -1,0 +1,35 @@
+[project]
+name = "fraud-detection-mlops"
+version = "1.0.0"
+description = "Pipeline MLOps - Détection de fraude bancaire"
+requires-python = ">=3.10"
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+  | models
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+max-complexity = 10
+exclude = [".git", "__pycache__", "venv", ".venv", "build"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
