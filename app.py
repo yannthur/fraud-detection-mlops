@@ -4,11 +4,11 @@ import sys
 from pathlib import Path
 
 import gradio as gr
+import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.model import FraudDetector
-
 
 MODEL_PATH = Path(__file__).parent / "models" / "fraud_model.pkl"
 
@@ -31,8 +31,6 @@ def predict(
 ) -> dict:
     """Prédit si une transaction est frauduleuse."""
     model = load_model()
-
-    import numpy as np
 
     features = np.array([[amount, city_pop, lat, long, merch_lat, merch_long]])
 
@@ -63,7 +61,7 @@ def main():
         ],
         outputs="json",
         title="Détection de Fraude Bancaire",
-        description="Entrez les caractéristiques d'une transaction pour prédire si elle est frauduleuse.",
+        description="Entrez les caractéristiques d'une transaction.",
     )
 
     iface.launch()

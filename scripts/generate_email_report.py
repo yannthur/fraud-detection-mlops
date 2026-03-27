@@ -1,7 +1,6 @@
 """Génère un rapport email basé sur les résultats du pipeline."""
+
 import os
-import sys
-from pathlib import Path
 
 
 def generate_email_report(pipeline_results: dict, hf_space_url: str) -> str:

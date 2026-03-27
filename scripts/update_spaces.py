@@ -5,7 +5,6 @@ from pathlib import Path
 
 from huggingface_hub import HfApi, login
 
-
 HF_TOKEN_FILE = Path("~/.hf_token").expanduser()
 
 

@@ -1,7 +1,7 @@
 """Module de modèle ML pour la détection de fraude."""
+from pathlib import Path
 
 import joblib
-from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -10,6 +10,7 @@ class FraudDetector:
     """Classifieur pour la détection de fraude bancaire."""
 
     def __init__(self):
+        """Initialize the FraudDetector with a RandomForest classifier."""
         self.model = RandomForestClassifier(
             n_estimators=100, max_depth=10, random_state=42, n_jobs=-1
         )

@@ -1,8 +1,7 @@
 """Module de prétraitement des données pour la détection de fraude."""
-
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler
 
 
 def load_data(filepath: str) -> pd.DataFrame:

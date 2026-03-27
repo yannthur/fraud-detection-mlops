@@ -1,7 +1,6 @@
 """Tests unitaires pour le module model."""
-
 import numpy as np
-import pytest
+
 from src.model import FraudDetector
 
 
