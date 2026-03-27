@@ -8,13 +8,14 @@ from email.mime.text import MIMEText
 
 def generate_report_content(pipeline_results: dict, hf_space_url: str) -> str:
     """Génère le contenu du rapport utilisant Gemini."""
-    import google.generativeai as genai
+    try:
+        import google.generativeai as genai
 
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
 
-    prompt = f"""Tu es un assistant qui génère des rapports professionnels.
+        prompt = f"""Tu es un assistant qui génère des rapports professionnels.
 
 Voici les résultats du pipeline de détection de fraude:
 - Exactitude (Accuracy): {pipeline_results.get("accuracy", "N/A")}
@@ -26,9 +27,20 @@ L'application est déployée sur: {hf_space_url}
 
 Génère un email professionnel résumant ces résultats."""
 
-    response = model.generate_content(prompt)
-
-    return response.text
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        print(f"Gemini API error: {e}")
+        return f"""
+        <p>Le pipeline MLOps de détection de fraude s'est exécuté avec succès.</p>
+        <p>Résultats:</p>
+        <ul>
+            <li>Accuracy: {pipeline_results.get("accuracy", "N/A")}</li>
+            <li>Precision fraude: {pipeline_results.get("precision_fraud", "N/A")}</li>
+            <li>Rappel fraude: {pipeline_results.get("recall_fraud", "N/A")}</li>
+            <li>F1 Score: {pipeline_results.get("f1_score", "N/A")}</li>
+        </ul>
+        """
 
 
 def send_email(subject: str, body: str) -> bool:
