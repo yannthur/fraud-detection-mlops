@@ -1,4 +1,5 @@
 """Upload le modèle vers HuggingFace Hub."""
+
 import os
 import sys
 from pathlib import Path

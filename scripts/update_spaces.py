@@ -1,4 +1,5 @@
 """Met à jour le HuggingFace Space avec la dernière version."""
+
 import os
 import sys
 
@@ -17,6 +18,8 @@ def update_spaces(repo_name: str = "fraud-detection", space_file: str = "app.py"
 
     api = HfApi()
     repo_id = f"yannthur/{repo_name}"
+
+    api.create_repo(repo_id=repo_id, repo_type="space", exist_ok=True)
 
     api.upload_file(
         path_or_fileobj=space_file,
